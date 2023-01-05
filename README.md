@@ -14,6 +14,8 @@ Java file: [Performance.java](Performance.java)
 
 ## Renders an avatar from letters
 
-Only with CSS and HTML
+Only with CSS and HTML.
+Renders a cycle with e.g. the initials of a username:
+<img width="67" alt="XY" src="XY.png">
 
 HTML file: [letter-avatar.html](letter-avatar.html)
