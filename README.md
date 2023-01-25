@@ -8,7 +8,7 @@ Bash file: [my-f3-check.sh](my-f3-check.sh)
 
 ## Performance.java
 
-Simple performace check in Java 8 (Fibonacci, Hash, Write, Memory)
+Simple performance check in Java 8 (Fibonacci, Hash, Write, Memory)
 
 Java file: [Performance.java](Performance.java)
 
