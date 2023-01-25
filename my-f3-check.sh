@@ -1,7 +1,7 @@
 #!/bin/bash
 
-# Writes files with x GB size into the current directory and checks the sha checksum later.
-# You may run the read check later explicitly with the written test-xxxxx.shasum file.
+# Writes files with 1 GB size into the current directory and checks the sha checksum later.
+# You may run the read check later explicitly with the written test-xxxxx.shasum FILE.
 # I thinks is similar to https://github.com/AltraMayor/f3
 # Main avantage for this script:
 # - needs not compiler, just "bash", "openssl", "shasum" and default utils.
@@ -12,39 +12,56 @@
 # Usage: ./my-f3-check.sh
 # check free local space to find the number of files
 
-if [ -z "${COUNT}" ]; then
-  FREE_K=$(df -k .|tail -n 1|awk '{print $4}')
-  FREE=$((FREE_K * 1024))
-  COUNT=$((FREE / 1000000000))
-  echo "Found $FREE free bytes here"
-fi
+FREE_K=$(df -k .|tail -n 1|awk '{print $4}')
+FREE=$((FREE_K * 1024))
+echo "Found $(printf "%'3.d\n" $FREE) free bytes here"
 
-PREFIX=test
+PREFIX=random
 LAST=0
 ERROR=0
+COUNT_WRITE=0
+COUNT_READ=0
 
-echo "Writing $COUNT files with 1GB = 1.000.000.000 each"
+# 100000 = 100 TB - limit for sure
+MAX=100000
 
-for ((i = 0; i < ${COUNT}; i++)); do
-  file=${PREFIX}-$(printf "%05d" $i)
-  echo -n "write file ${file} ...       "
-  openssl rand 1000000000 | tee ${file} | shasum | sed s/-/${file}/g >${file}.shasum
+echo "Writing some files with 1GB = 1,000,000,000 bytes each"
+
+for ((i = 0; i < ${MAX}; i++)); do
+
+  FREE_K=$(df -k .|tail -n 1|awk '{print $4}')
+
+  if [ "${FREE_K}" -lt 2000000 ]; then
+    break
+  fi
+
+  FILE=${PREFIX}-$(printf "%05d" $i)
+
+  if [ -f "${FILE}" ]; then
+    echo "found existing file ${FILE} skipping name and try next"
+    continue
+  fi
+
+  echo -n "write file ${FILE} ...       "
+  openssl rand 1000000000 | tee ${FILE} | shasum | sed s/-/${FILE}/g >${FILE}.shasum
+  ((COUNT_WRITE++));
   echo $((SECONDS - LAST)) s
   LAST=$SECONDS
+
 done
 
 WRITE=${SECONDS}
 
-for ((i = 0; i < ${COUNT}; i++)); do
-  file=${PREFIX}-$(printf "%05d" $i)
-  echo -n "check file ${file} ... "
-  shasum -c ${file}.shasum -s
+for FILE in ${PREFIX}-*.shasum; do
+  echo -n "check FILE ${FILE} ... "
+  shasum -c ${FILE} -s
   RESULT=$?
   if [ "${RESULT}" -eq "0" ]; then
     echo -n "OK    "
   else
     echo -n "ERROR "
   fi
+  ((COUNT_READ++));
   ERROR=$((ERROR + RESULT))
   echo "$((SECONDS - LAST)) s"
   LAST=$SECONDS
@@ -53,10 +70,14 @@ done
 READ=$((SECONDS - WRITE))
 
 echo
-echo "Found ${ERROR} errors from ${COUNT} tests: $((ERROR * 100 / COUNT)) %"
+echo "Found ${ERROR} errors from ${COUNT_READ} tests: $((ERROR * 100 / COUNT_READ)) %"
 echo
-echo "Writing + random + checksum performance: $((1000 * COUNT / WRITE)) MB/s"
-echo "Reading + checksum          performance: $((1000 * COUNT / READ)) MB/s"
+if [ "$WRITE" -gt 0 ]; then
+  echo "Writing + random + checksum performance: $((1000 * COUNT_WRITE / WRITE)) MB/s"
+fi
+if [ "$READ" -gt 0 ]; then
+  echo "Reading + checksum          performance: $((1000 * COUNT_READ / READ)) MB/s"
+fi
 
 if [ $ERROR -gt 0 ]; then
   echo
