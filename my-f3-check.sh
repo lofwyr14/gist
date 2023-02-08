@@ -3,20 +3,20 @@
 # Writes files with 1 GB size into the current directory and checks the sha checksum later.
 # You may run the read check later explicitly with the written test-xxxxx.shasum FILE.
 # I thinks is similar to https://github.com/AltraMayor/f3
-# Main avantage for this script:
+# Main advantage for this script:
 # - needs not compiler, just "bash", "openssl", "shasum" and default utils.
 # - runs much faster on my system
 #
-# Usage: ./my-f3-check.sh <number-of-giga-bytes-to-test>
-# e. g. 32 means 32000000000 bytes
 # Usage: ./my-f3-check.sh
 # check free local space to find the number of files
+
+echo "my-f3-check.sh version 2.0.1"
 
 FREE_K=$(df -k .|tail -n 1|awk '{print $4}')
 FREE=$((FREE_K * 1024))
 echo "Found $(printf "%'3.d\n" $FREE) free bytes here"
 
-PREFIX=random
+PREFIX="test"
 LAST=0
 ERROR=0
 COUNT_WRITE=0
@@ -27,15 +27,15 @@ MAX=100000
 
 echo "Writing some files with 1GB = 1,000,000,000 bytes each"
 
-for ((i = 0; i < ${MAX}; i++)); do
+for ((i = 0; i < MAX; i++)); do
 
   FREE_K=$(df -k .|tail -n 1|awk '{print $4}')
 
-  if [ "${FREE_K}" -lt 2000000 ]; then
+  if [ "${FREE_K}" -lt 1200000 ]; then
     break
   fi
 
-  FILE=${PREFIX}-$(printf "%05d" $i)
+  FILE=${PREFIX}-$(printf "%05d" "$i")
 
   if [ -f "${FILE}" ]; then
     echo "found existing file ${FILE} skipping name and try next"
